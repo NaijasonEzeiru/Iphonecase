@@ -6,7 +6,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE = process.env.COOKIE_NAME || "session";
 
 export type Session = {
-  userId: number;
+  userId: string;
   email: string;
 };
 

@@ -1,37 +1,39 @@
-import { db } from '@/db'
-import { notFound } from 'next/navigation'
-import DesignConfigurator from './DesignConfigurator'
+import { db } from "@/db";
+import { notFound } from "next/navigation";
+import DesignConfigurator from "./DesignConfigurator";
+import { configuration } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 interface PageProps {
   searchParams: {
-    [key: string]: string | string[] | undefined
-  }
+    [key: string]: string | string[] | undefined;
+  };
 }
 
 const Page = async ({ searchParams }: PageProps) => {
-  const { id } = searchParams
+  const { id } = searchParams;
 
-  if (!id || typeof id !== 'string') {
-    return notFound()
+  if (!id || typeof id !== "string") {
+    return notFound();
   }
 
-  const configuration = await db.configuration.findUnique({
-    where: { id },
-  })
+  const config = await db.query.configuration.findFirst({
+    where: eq(configuration.id, id),
+  });
 
-  if (!configuration) {
-    return notFound()
+  if (!config) {
+    return notFound();
   }
 
-  const { imageUrl, width, height } = configuration
+  const { imageUrl, width, height } = config;
 
   return (
     <DesignConfigurator
-      configId={configuration.id}
+      configId={config.id}
       imageDimensions={{ width, height }}
       imageUrl={imageUrl}
     />
-  )
-}
+  );
+};
 
-export default Page
+export default Page;

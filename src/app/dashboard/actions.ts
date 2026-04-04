@@ -1,17 +1,16 @@
-"use server"
+"use server";
 
-import { db } from '@/db'
-import { OrderStatus } from '@prisma/client'
+import { db } from "@/db";
+import { order } from "@/db/schema";
+import { orderStatus } from "@/lib/vars";
+import { eq } from "drizzle-orm";
 
 export const changeOrderStatus = async ({
   id,
   newStatus,
 }: {
-  id: string
-  newStatus: OrderStatus
+  id: string;
+  newStatus: (typeof orderStatus)[number];
 }) => {
-  await db.order.update({
-    where: { id },
-    data: { status: newStatus },
-  })
-}
+  await db.update(order).set({ status: newStatus }).where(eq(order.id, id));
+};

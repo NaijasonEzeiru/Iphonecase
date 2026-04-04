@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { Resend } from "resend";
 import OrderReceivedEmail from "@/components/emails/OrderReceivedEmail";
+import { order, shippingAddress, billingAddress } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -39,37 +41,48 @@ export async function POST(req: Request) {
         throw new Error("Invalid request metadata");
       }
 
-      const billingAddress = session.customer_details!.address;
-      const shippingAddress = session.shipping_details!.address;
+      const billingAddressData = session.customer_details!.address;
+      const shippingAddressData = session.shipping_details!.address;
 
-      const updatedOrder = await db.order.update({
-        where: {
-          id: orderId,
-        },
-        data: {
+      // Create shipping address
+      const [newShippingAddress] = await db
+        .insert(shippingAddress)
+        .values({
+          name: session.customer_details!.name!,
+          city: shippingAddressData!.city!,
+          country: shippingAddressData!.country!,
+          postalCode: shippingAddressData!.postal_code!,
+          street: shippingAddressData!.line1!,
+          state: shippingAddressData!.state || null,
+          phoneNumber: null, // Not available from Stripe session
+        })
+        .returning();
+
+      // Create billing address
+      const [newBillingAddress] = await db
+        .insert(billingAddress)
+        .values({
+          name: session.customer_details!.name!,
+          city: billingAddressData!.city!,
+          country: billingAddressData!.country!,
+          postalCode: billingAddressData!.postal_code!,
+          street: billingAddressData!.line1!,
+          state: billingAddressData!.state || null,
+          phoneNumber: null, // Not available from Stripe session
+        })
+        .returning();
+
+      // Update order with payment status and address references
+      const [updatedOrder] = await db
+        .update(order)
+        .set({
           isPaid: true,
-          shippingAddress: {
-            create: {
-              name: session.customer_details!.name!,
-              city: shippingAddress!.city!,
-              country: shippingAddress!.country!,
-              postalCode: shippingAddress!.postal_code!,
-              street: shippingAddress!.line1!,
-              state: shippingAddress!.state,
-            },
-          },
-          billingAddress: {
-            create: {
-              name: session.customer_details!.name!,
-              city: billingAddress!.city!,
-              country: billingAddress!.country!,
-              postalCode: billingAddress!.postal_code!,
-              street: billingAddress!.line1!,
-              state: billingAddress!.state,
-            },
-          },
-        },
-      });
+          shippingAddressId: newShippingAddress.id,
+          billingAddressId: newBillingAddress.id,
+          updated: new Date(),
+        })
+        .where(eq(order.id, orderId))
+        .returning();
 
       await resend.emails.send({
         from: "AppleCase <jayseehe1035@gmail.com>",
@@ -77,15 +90,15 @@ export async function POST(req: Request) {
         subject: "Thanks for your order!",
         react: OrderReceivedEmail({
           orderId,
-          orderDate: updatedOrder.createdAt.toLocaleDateString(),
+          orderDate: new Date(updatedOrder.createdAt!).toLocaleDateString(),
           // @ts-ignore
           shippingAddress: {
             name: session.customer_details!.name!,
-            city: shippingAddress!.city!,
-            country: shippingAddress!.country!,
-            postalCode: shippingAddress!.postal_code!,
-            street: shippingAddress!.line1!,
-            state: shippingAddress!.state,
+            city: shippingAddressData!.city!,
+            country: shippingAddressData!.country!,
+            postalCode: shippingAddressData!.postal_code!,
+            street: shippingAddressData!.line1!,
+            state: shippingAddressData!.state,
           },
         }),
       });

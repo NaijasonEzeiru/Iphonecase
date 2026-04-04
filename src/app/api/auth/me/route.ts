@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { getSession } from "@/lib/auth";
+import { createSession, getSession } from "@/lib/auth";
+import { eq } from "drizzle-orm";
+import { usersTable } from "@/db/schema";
 
 export const GET = async () => {
   // const token = request.cookies.get("access_token")?.value;
@@ -9,7 +11,16 @@ export const GET = async () => {
     return NextResponse.json({ message: "no credentials" });
   }
   try {
-    const user = await db.user.findUnique({ where: { id: u.userId } });
+    const user = await db.query.usersTable.findFirst({
+      where: eq(usersTable.id, u.userId),
+      with: {
+        orders: {
+          with: {
+            configuration: true,
+          },
+        },
+      },
+    });
     if (!user) {
       return new NextResponse(
         JSON.stringify({
@@ -27,20 +38,10 @@ export const GET = async () => {
         { status: 401 },
       );
     }
-    const { passwordHash: _, ...rest } = user;
-
-    db.update(users)
-      .set({
-        lastLoginAt: sql`CURRENT_TIMESTAMP`,
-      })
-      .where(eq(users.id, u.userId))
-      .catch(console.error);
 
     await createSession({
       userId: user.id,
-      role: user.role,
       email: user.email,
-      country: user.country,
     });
 
     const response = NextResponse.json(
