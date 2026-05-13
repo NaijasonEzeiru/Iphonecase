@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { createSession, getSession } from "@/lib/auth";
 import { eq } from "drizzle-orm";
-import { usersTable } from "@/db/schema";
+import { user } from "@/db/schema";
 
 export const GET = async () => {
   // const token = request.cookies.get("access_token")?.value;
@@ -11,8 +11,8 @@ export const GET = async () => {
     return NextResponse.json({ message: "no credentials" });
   }
   try {
-    const user = await db.query.usersTable.findFirst({
-      where: eq(usersTable.id, u.userId),
+    const v = await db.query.user.findFirst({
+      where: eq(user.id, u.userId),
       with: {
         orders: {
           with: {
@@ -21,7 +21,7 @@ export const GET = async () => {
         },
       },
     });
-    if (!user) {
+    if (!v) {
       return new NextResponse(
         JSON.stringify({
           message: "Invalid credentials",
@@ -29,8 +29,8 @@ export const GET = async () => {
         { status: 401 },
       );
     }
-    const { passwordHash: _, ...rest } = user;
-    if (!user) {
+    const { passwordHash: _, ...rest } = v;
+    if (!v) {
       return new NextResponse(
         JSON.stringify({
           message: "Invalid credentials",
@@ -40,8 +40,8 @@ export const GET = async () => {
     }
 
     await createSession({
-      userId: user.id,
-      email: user.email,
+      userId: v.id,
+      email: v.email,
     });
 
     const response = NextResponse.json(

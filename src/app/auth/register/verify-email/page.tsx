@@ -7,25 +7,39 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import RegisterForm from "./registerForm";
-import Link from "next/link";
-import { Suspense } from "react";
-import { useRouter } from "next/navigation";
+import VerifyCode from "@/components/verifyEmail";
 import { useCurrentUser } from "@/lib/react-query/hooks";
-import { toast } from "@/components/ui/use-toast";
+import { notFound, useRouter, useSearchParams } from "next/navigation";
 
 export default function FieldInput() {
+  const email = useSearchParams().get("email"); // to trigger redirect if not logged in
+
   const router = useRouter();
   const { data: currentUser } = useCurrentUser();
 
   if (currentUser) {
     router.replace("/");
-    toast({
-      title: "You are already logged in",
-      description: "You are already logged in. Redirecting to homepage.",
-    });
+    // toast({
+    //   title: "You are already logged in",
+    //   description: "You are already logged in. Redirecting to homepage.",
+    // });
     return null;
   }
+
+  if (!email) {
+    return notFound();
+  }
+
+  //   if (!currentUser) {
+  //     router.replace("/auth/login");
+  //     toast({
+  //       title: "Not logged in",
+  //       description: "Please log in to verify your email.",
+  //       variant: "destructive",
+  //     });
+  //     return null;
+  //   }
+
   return (
     <div className="flex items-center justify-center h-[calc(100vh-8.6rem)] px-2.5">
       <Card className="border-border max-w-md w-full">
@@ -34,18 +48,7 @@ export default function FieldInput() {
           <CardDescription>Enter your details to register</CardDescription>
         </CardHeader>
         <CardContent>
-          <Suspense>
-            <RegisterForm />
-          </Suspense>
-          <div className="text-center text-sm mt-4">
-            Don't have an account?{" "}
-            <Link
-              href="/auth/login"
-              className="hover:underline underline-offset-4 text-primary"
-            >
-              Sign up
-            </Link>
-          </div>
+          <VerifyCode email={email} />
         </CardContent>
       </Card>
     </div>

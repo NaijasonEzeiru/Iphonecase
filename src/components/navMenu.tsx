@@ -8,6 +8,8 @@ export default function NavMenu() {
   const { data: user, isLoading } = useCurrentUser();
   const { mutate, isPending } = useLogout();
 
+  console.log({ user, isLoading });
+
   const isAdmin = user?.email === process.env.ADMIN_EMAIL;
 
   return (

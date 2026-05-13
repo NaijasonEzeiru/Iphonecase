@@ -21,6 +21,8 @@ const Page = async ({ searchParams }: PageProps) => {
     where: eq(configuration.id, id),
   });
 
+  console.log({ config });
+
   if (!config) {
     return notFound();
   }

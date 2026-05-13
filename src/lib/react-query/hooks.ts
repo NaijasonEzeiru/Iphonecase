@@ -1,5 +1,5 @@
 import { UserWithRelations } from "@/db/schema";
-import { QueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryKeys } from "./keys";
 import { getCurrentUser, logoutUser } from "./fetchers";
 import { useToast } from "@/components/ui/use-toast";
@@ -28,7 +28,6 @@ export function useLogout() {
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
-        variant: "destructive",
       });
     },
     onError: (_err, _, context) => {

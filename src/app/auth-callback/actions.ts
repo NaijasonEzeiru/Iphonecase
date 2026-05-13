@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { createSession, getSession } from "@/lib/auth";
 import { eq } from "drizzle-orm";
-import { usersTable } from "@/db/schema";
+import { user } from "@/db/schema";
 
 export const getAuthStatus = async () => {
   const u = await getSession();
@@ -11,8 +11,8 @@ export const getAuthStatus = async () => {
     throw new Error("Invalid user data");
   }
 
-  const user = await db.query.usersTable.findFirst({
-    where: eq(usersTable.id, u.userId),
+  const v = await db.query.user.findFirst({
+    where: eq(user.id, u.userId),
     with: {
       orders: {
         with: {
@@ -21,17 +21,17 @@ export const getAuthStatus = async () => {
       },
     },
   });
-  if (!user) {
+  if (!v) {
     throw new Error("Invalid user data");
   }
-  const { passwordHash: _, ...rest } = user;
-  if (!user) {
+  const { passwordHash: _, ...rest } = v;
+  if (!v) {
     throw new Error("Invalid user data");
   }
 
   await createSession({
-    userId: user.id,
-    email: user.email,
+    userId: v.id,
+    email: v.email,
   });
 
   return { success: true };

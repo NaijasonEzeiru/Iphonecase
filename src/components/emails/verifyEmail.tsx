@@ -65,9 +65,12 @@ export const VerifyEmail = ({
       <Head />
       <Body style={main}>
         <Container style={container}>
-          <Link href="https://xcorthub.com" style={header}>
-            <span style={span}>X</span>cort<span style={span}>H</span>ub
+          <Link href="/" className="flex z-40 font-semibold text-lg">
+            Iphone<span style={span}>Case</span>
           </Link>
+          {/* <Link href="https://xcorthub.com" style={header}>
+            <span style={span}>X</span>cort<span style={span}>H</span>ub
+          </Link> */}
 
           <Heading style={secondary}>{t.title}</Heading>
 
@@ -130,7 +133,7 @@ const header = {
 };
 
 const span = {
-  color: "gold",
+  color: "#7f22fe",
 };
 
 const container = {

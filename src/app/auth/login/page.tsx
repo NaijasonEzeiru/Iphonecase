@@ -6,6 +6,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import LoginForm from "./loginForm";
+import Link from "next/dist/client/link";
+import { Suspense } from "react";
 
 export default function FieldInput() {
   return (
@@ -16,7 +18,18 @@ export default function FieldInput() {
           <CardDescription>Enter your credentials to login</CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <Suspense>
+            <LoginForm />
+          </Suspense>
+          <div className="text-center text-sm mt-4">
+            Don't have an account?{" "}
+            <Link
+              href="/auth/register"
+              className="hover:underline underline-offset-4 text-primary"
+            >
+              Sign up
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

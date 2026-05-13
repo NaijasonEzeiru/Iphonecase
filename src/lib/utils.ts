@@ -15,6 +15,12 @@ export const formatPrice = (price: number) => {
   return formatter.format(price);
 };
 
+export function formatCountdown(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs}`;
+}
+
 export function constructMetadata({
   title = "AppleCase - custom high-quality phone cases",
   description = "Create custom high-quality phone cases in seconds",

@@ -9,18 +9,6 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-export const usersTable = pgTable("users", {
-  id: text("id")
-    .primaryKey()
-    .notNull()
-    .default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  lastLoginAt: timestamp("last_login_at").defaultNow().notNull(),
-  deletedAt: timestamp("deleted_at"),
-});
-
 // Enums
 export const orderStatusEnum = pgEnum("order_status", [
   "fulfilled",
@@ -59,7 +47,7 @@ export const configuration = pgTable("configuration", {
   croppedImageUrl: text("cropped_image_url"),
 });
 
-export const user = pgTable("user", {
+export const user = pgTable("users", {
   id: text("id")
     .primaryKey()
     .notNull()
@@ -69,6 +57,7 @@ export const user = pgTable("user", {
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  emailVerified: timestamp("email_verified", { mode: "date" }),
 });
 
 export const shippingAddress = pgTable("shipping_address", {
@@ -131,7 +120,7 @@ export const emailVerification = pgTable("email_verifiaction", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userEmail: text("user_email")
     .notNull()
-    .references(() => usersTable.email, { onDelete: "cascade" })
+    .references(() => user.email, { onDelete: "cascade" })
     .unique(),
   codeHash: text("code_hash").notNull(), // Hashed version for security
   attempts: integer("attempts").default(0).notNull(),
@@ -143,9 +132,25 @@ export const configurationRelations = relations(configuration, ({ many }) => ({
   orders: many(order),
 }));
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   orders: many(order),
+  emailVerification: one(emailVerification, {
+    relationName: "verificationCodes",
+    fields: [user.email],
+    references: [emailVerification.userEmail],
+  }),
 }));
+
+export const verificationRelations = relations(
+  emailVerification,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [emailVerification.userEmail],
+      references: [user.email],
+      relationName: "verificationCodes",
+    }),
+  }),
+);
 
 export const shippingAddressRelations = relations(
   shippingAddress,
@@ -181,7 +186,7 @@ export const orderRelations = relations(order, ({ one }) => ({
 }));
 
 export type Order = InferSelectModel<typeof order>;
-export type User = InferSelectModel<typeof usersTable>;
+export type User = InferSelectModel<typeof user>;
 export type Configuration = InferSelectModel<typeof configuration>;
 export type ShippingAddress = InferSelectModel<typeof shippingAddress>;
 export type BillingAddress = InferSelectModel<typeof billingAddress>;
@@ -191,6 +196,6 @@ export type OrderWithRelations = Order & {
   user: User;
 } & { shippingAddress: ShippingAddress | null } & {
   billingAddress: BillingAddress | null;
-};
+} & { emailVerification: EmailVerification | null };
 export type UserWithRelations = User & { orders: Order[] };
 export type ConfigurationWithRelations = Configuration & { orders: Order[] };

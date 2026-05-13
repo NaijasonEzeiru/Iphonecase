@@ -15,13 +15,14 @@ import { useToast } from "@/components/ui/use-toast";
 import LoginModal from "@/components/LoginModal";
 import { Configuration } from "@/db/schema";
 import { useCurrentUser } from "@/lib/react-query/hooks";
+import { useCreatePaymentSession } from "@/lib/react-query/mutations";
 
 const DesignPreview = ({ configuration }: { configuration: Configuration }) => {
   const router = useRouter();
-  const { toast } = useToast();
   const { id } = configuration;
   const { data: user } = useCurrentUser();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const { mutate: createPaymentSession } = useCreatePaymentSession();
 
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
   useEffect(() => setShowConfetti(true));
@@ -41,24 +42,8 @@ const DesignPreview = ({ configuration }: { configuration: Configuration }) => {
     totalPrice += PRODUCT_PRICES.material.polycarbonate;
   if (finish === "textured") totalPrice += PRODUCT_PRICES.finish.textured;
 
-  const { mutate: createPaymentSession } = useMutation({
-    mutationKey: ["get-checkout-session"],
-    mutationFn: createCheckoutSession,
-    onSuccess: ({ url }) => {
-      if (url) router.push(url);
-      else throw new Error("Unable to retrieve payment URL.");
-    },
-    onError: () => {
-      toast({
-        title: "Something went wrong",
-        description: "There was an error on our end. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleCheckout = () => {
-    if (user) {
+    if (user?.emailVerified) {
       // create payment session
       createPaymentSession({ configId: id });
     } else {

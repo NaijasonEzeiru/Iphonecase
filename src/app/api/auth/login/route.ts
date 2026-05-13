@@ -1,15 +1,14 @@
-import { NextResponse } from "next/server";
-import { eq, or } from "drizzle-orm";
-
 import { createSession } from "@/lib/auth";
 import { compareHash } from "@/lib/crypto";
 import { loginSchema } from "@/lib/zodSchema";
-import { usersTable } from "@/db/schema";
+import { user } from "@/db/schema";
 import { db } from "@/db";
+import { NextResponse } from "next/server";
+import { eq, or } from "drizzle-orm";
+import { sendVerificationEmail } from "@/apiFunctions/resendCode";
 
 export async function POST(req: Request) {
   const payload = await req.json();
-  console.log({ payload });
   const parsed = loginSchema.safeParse(payload);
   if (!parsed.success)
     return NextResponse.json(
@@ -18,11 +17,9 @@ export async function POST(req: Request) {
     );
   try {
     const { username, password } = parsed.data;
-    const u = await db.query.usersTable.findFirst({
-      where: or(
-        eq(usersTable.email, username),
-        eq(usersTable.username, username),
-      ),
+    console.log({ username, password });
+    const u = await db.query.user.findFirst({
+      where: or(eq(user.email, username), eq(user.username, username)),
       with: {
         orders: {
           with: {
@@ -31,6 +28,7 @@ export async function POST(req: Request) {
         },
       },
     });
+    console.log({ userRecord: u });
     if (!u)
       return NextResponse.json(
         {
@@ -51,11 +49,15 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+    if (u.emailVerified) {
+      await createSession({
+        userId: u.id,
+        email: u.email,
+      });
+    } else {
+      await sendVerificationEmail(u.email);
+    }
 
-    await createSession({
-      userId: u.id,
-      email: u.email,
-    });
     return NextResponse.json(
       {
         ok: true,
